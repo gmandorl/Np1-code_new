@@ -193,11 +193,14 @@ int TMVAClassification_main(TString variable_name, TString type, std::vector<TSt
        out<<"We used variables : "<<endl;
 	for (int i=0;i<variables_names.size();i++){ 
         
-        factory->AddVariable(variables_names[i], "", "", 'F' );
+        if ((variables_names[i].CompareTo("softActivityEWK_njets10")==0) || (variables_names[i].CompareTo("softActivityEWK_njets5")==0)) {factory->AddVariable(variables_names[i], "", "", 'I' ); std::cout << "INTEGER VARIABLE" << std::endl;}
+        else factory->AddVariable(variables_names[i], "", "", 'F' );
+        
 	out<<variables_names[i]<<"   ,   ";
         }
         if (variable_name.CompareTo("nomore")!=0){
-        factory->AddVariable(variable_name, "", "", 'F' );
+            if ((variable_name.CompareTo("softActivityEWK_njets10")==0) || (variable_name.CompareTo("softActivityEWK_njets5")==0)) {factory->AddVariable(variable_name, "", "", 'I' ); std::cout << "INTEGER VARIABLE" << std::endl;}
+            else factory->AddVariable(variable_name, "", "", 'F' );
         }
         
         
@@ -313,7 +316,7 @@ int TMVAClassification_main(TString variable_name, TString type, std::vector<TSt
 //     SplitSeed++;
    
    char parameter_string[500];
-   sprintf(parameter_string,"SplitMode=Random:SplitSeed=%i:nTrain_Signal=200000:nTrain_Background=80000:NormMode=NumEvents:!V",SeedGen-20);    // I set the seed of the random choice equal to the number of variable
+   sprintf(parameter_string,"SplitMode=Random:SplitSeed=%i:nTrain_Signal=200000:nTrain_Background=80000:NormMode=NumEvents:!V",SeedGen-40);    // I set the seed of the random choice equal to the number of variable
       factory->PrepareTrainingAndTestTree( mycuts, mycutb, parameter_string);     
    
     ////////////////////////////   GOOD ONE WITHOUT SPLITSEED //////////////////////////
@@ -354,7 +357,7 @@ int TMVAClassification_main(TString variable_name, TString type, std::vector<TSt
 //GOOD UP TO HERE: 
 
 	char parString[500];
-	sprintf(parString,"!H:!V:NTrees=%i:MinNodeSize=%.2f:BoostType=AdaBoost:Shrinkage=.1:UseBaggedBoost:VarTransform=Decorrelate:BaggedSampleFraction=0.6:MaxDepth=%i:nCuts=20",nTrees,MinNodeSize,maxDepth); //correct parString VarTransform=Decorrelate:
+	sprintf(parString,"!H:!V:NTrees=%i:MinNodeSize=%.2f:BoostType=AdaBoost:Shrinkage=.1:VarTransform=Decorrelate:UseBaggedBoost:BaggedSampleFraction=0.6:MaxDepth=%i:nCuts=20",nTrees,MinNodeSize,maxDepth); //correct parString VarTransform=Decorrelate:
   // sprintf(parString,"!H:!V:NTrees=%i:MinNodeSize=%.2f:BoostType=Grad:Shrinkage=.1:UseBaggedBoost:BaggedSampleFraction=0.6:MaxDepth=%i:nCuts=20",nTrees,MinNodeSize,maxDepth);
 	// sprintf(parString,"!H:!V:NTrees=%i:MinNodeSize=%.2f:MaxDepth=%i:BoostType=AdaBoost:AdaBoostBeta=0.1:SeparationType=GiniIndex:NegWeightTreatment=IgnoreNegWeightsInTraining:PruneMethod=NoPruning",nTrees,MinNodeSize,maxDepth);
 
@@ -429,20 +432,22 @@ main(int argc, char* argv[])
     int seedToApply = atoi(argv[1]);
     std::cout << "seedToApply   " << seedToApply  << std::endl;
     
-const int max_variables_number=39;
+const int max_variables_number=35;
 const int primary_variables_number=6;
 
 
+// TString variables_names_array_primary[primary_variables_number]={"qgl_1q","qgl_2q"} ;
+// TString variables_names_array_primary[primary_variables_number]={"ll_mass","Mqq", "RptHard","ll_zstar"} ;
 TString variables_names_array_primary[primary_variables_number]={"ll_mass","Mqq", "RptHard","ll_zstar", "softActivityEWK_njets10", "ll_pt"} ;
 // TString variables_names_array_primary[primary_variables_number]={"ll_mass", "Mqq", "RptHard", "DeltaEtaQQ", "ll_pt", "ll_eta", "EWKHTsoft", "Jet2q_pt"}; //variabili giugno
 // TString variables_names_array_primary[primary_variables_number]={"ll_mass", "Mqq", "RptHard","ll_zstar","softActivityEWK_njets5","ll_pt","W_mass_virtual2","W_Pt_virtual1"}; // variabili gennaio
 
-TString variables_names_array[max_variables_number]={"Inv_mass","ll_mass","energytot","W_mass_virtual1","W_mass_virtual2","qgl_1q","qgl_2q" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","Mqq", "RptHard", "ll_eta", "EWKHTsoft", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","btagCMVA", "cosThetaStarJet","WWmass","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets2","softActivityEWK_njets5","softActivityEWK_njets10","W_eta_virtual1","W_eta_virtual2","E_parton1","E_parton2","deltaM"};
+TString variables_names_array[max_variables_number]={"Inv_mass","ll_mass","energytot","W_mass_virtual1","W_mass_virtual2","qgl_1q","qgl_2q" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","Mqq", "RptHard", "ll_eta", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","btagCMVA", "cosThetaStarJet","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets5", "softActivityEWK_njets10", "W_eta_virtual1","W_eta_virtual2","E_parton1","E_parton2"};
 
 
 
 // const int max_variables_number=1;
-// TString variables_names_array[max_variables_number]={"qgl_1q"};
+// TString variables_names_array[max_variables_number]={"Inv_mass"};
 
 // const int max_variables_number=5;
 // TString variables_names_array[max_variables_number]={"energytot","met_pt","WWmass","impulsoZ","randomVariable"};
@@ -484,7 +489,7 @@ for ( int n = 0; n<variableNames.size(); ++n) {
         std::cout << "Seed Generator:  " << seedToApply_string << " \t " << seedToApply <<  std::endl;
         
         
-//         TMVAClassification_main(variableNames[n], newType, variables_names, seedToApply, 100, 0.05, 2);
+        TMVAClassification_main(variableNames[n], newType, variables_names, seedToApply, 100, 0.05, 2);
 }
 
 
