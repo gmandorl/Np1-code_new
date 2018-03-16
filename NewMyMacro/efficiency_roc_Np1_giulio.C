@@ -10,6 +10,13 @@
 #include "TROOT.h"
 #include <TLatex.h>
 
+///////// TO MAKE DIRECTORIES ////////////
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+/////////////////////////////////////////
+
+
 
 
 void setHistoStyle(TH1F *histo, std::string title_name, std::string Yaxis_name) {
@@ -525,6 +532,28 @@ void drawAndSaveSensitivities(Double_t totalSensitivity[], Double_t totalSensiti
 }
 
 
+void drawDecorrelatedInput(TCanvas *canv_deco, TH1F * h_deco_signal, TH1F * h_deco_backgr, TLegend *leg, std::string figName, std::string seed_string) {
+    
+        h_deco_signal->Scale(1./h_deco_signal->Integral());
+        h_deco_backgr->Scale(1./h_deco_backgr->Integral());
+            
+    h_deco_signal->SetLineWidth(2);
+    h_deco_backgr->SetLineWidth(2);
+    
+    h_deco_signal->GetYaxis()->SetRangeUser(0.,1.2*max(h_deco_signal->GetMaximum(), h_deco_backgr->GetMaximum()));
+    
+    h_deco_signal->Draw();
+    h_deco_backgr->Draw("same");
+    leg->Draw();
+    
+    struct stat st = {0};
+    if (stat(("figure/efficiency_figure/decorrelatedVariables/"+seed_string+"SeedGen").c_str(), &st) == -1) {
+        mkdir(("figure/efficiency_figure/decorrelatedVariables/"+seed_string+"SeedGen").c_str(), 0777);
+    }
+        
+    canv_deco->Print(("figure/efficiency_figure/decorrelatedVariables/"+seed_string+"SeedGen/"+seed_string+"SeedGen"+figName+".png").c_str());
+    
+}
 
 
 
@@ -549,14 +578,23 @@ void efficiency_roc_Np1_giulio(){
             const int primary_variables_number=6;
             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","Mqq", "RptHard","ll_zstar", "softActivityEWK_njets10", "ll_pt"};
             
+//             const int primary_variables_number=3;
+//             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","Mqq", "RptHard"};
+            
+            
+//             const int primary_variables_number=2;
+//             std::string variables_names_array_primary[primary_variables_number]={"qgl_1q","qgl_2q"};
+            
+            
 //             const int primary_variables_number=8;
 //             std::string variables_names_array_primary[primary_variables_number]={"ll_mass", "Mqq", "RptHard","ll_zstar","softActivityEWK_njets5","ll_pt","W_mass_virtual2","W_Pt_virtual1"};
             
             
-            const int max_variables_number=39;
-            std::string all_variables_names[max_variables_number]={"Inv_mass","ll_mass","energytot","W_mass_virtual1","W_mass_virtual2","qgl_1q","qgl_2q" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","Mqq", "RptHard", "ll_eta", "EWKHTsoft", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","btagCMVA", "cosThetaStarJet","WWmass","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets2","softActivityEWK_njets5","softActivityEWK_njets10","W_eta_virtual1","W_eta_virtual2","E_parton1","E_parton2","deltaM"};
+//             const int max_variables_number=39;
+//             std::string all_variables_names[max_variables_number]={"Inv_mass","ll_mass","energytot","W_mass_virtual1","W_mass_virtual2","qgl_1q","qgl_2q" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","Mqq", "RptHard", "ll_eta", "EWKHTsoft", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","btagCMVA", "cosThetaStarJet","WWmass","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets2","softActivityEWK_njets5","softActivityEWK_njets10","W_eta_virtual1","W_eta_virtual2","E_parton1","E_parton2","deltaM"};
             
-
+            const int max_variables_number=35;
+            std::string all_variables_names[max_variables_number]={"Inv_mass","ll_mass","energytot","W_mass_virtual1","W_mass_virtual2","qgl_1q","qgl_2q" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","Mqq", "RptHard", "ll_eta", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","btagCMVA", "cosThetaStarJet","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets5","W_eta_virtual1","W_eta_virtual2","E_parton1","E_parton2", "softActivityEWK_njets10"};
             
             
 //             const int max_variables_number=17;
@@ -690,7 +728,7 @@ void efficiency_roc_Np1_giulio(){
 	for (int current_file=0;current_file<n_variables;current_file++){
             
             
-                const int numberOfSeedToRead = 19;
+                const int numberOfSeedToRead = 1;
             
                 Double_t totalSensitivity_thisVariable[numberOfSeedToRead];
                 Double_t totalSensitivity_thisVariable_train[numberOfSeedToRead];
@@ -729,7 +767,7 @@ void efficiency_roc_Np1_giulio(){
                 totalKS_B_thisVariable[seed_idx] = 0;
                 
                 
-                int seed = 61 + seed_idx;
+                int seed = 121 + seed_idx;
 
                 std::ostringstream seed_s;
                 seed_s  << seed; 
@@ -762,6 +800,51 @@ void efficiency_roc_Np1_giulio(){
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////   FINE CORRELAZIONI   ///////////////////////////////////////////////
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                
+                
+                
+                
+                
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////     INPUT DECORRELATI      ////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                
+                TCanvas *canv_deco = new TCanvas("canv_deco", "canv_deco", 800, 600);
+                canv_deco->cd();
+                gStyle->SetOptStat(0000);
+    
+    
+                for (int n = 0; n < primary_variables_number+1; n++) {
+
+                    std::string variableName = file_names[current_file];
+                    if(n < primary_variables_number) variableName = variables_names_array_primary[n];
+                    if(variableName.compare("nomore")==0) continue;
+                    
+                    TH1F * h_deco_signal = (TH1F*) ((TH1F*)file->Get(("Method_BDT/BDTG/"+variableName+"__Signal").c_str()))->Clone(("CorrelationMatrixS_"+variableName+"_"+seed_string+"SeedGen_"+variables_names[current_file]).c_str());
+                    TH1F * h_deco_backgr = (TH1F*) ((TH1F*)file->Get(("Method_BDT/BDTG/"+variableName+"__Background").c_str()))->Clone(("CorrelationMatrixB_"+variableName+"_"+seed_string+"SeedGen_"+variables_names[current_file]).c_str());
+                    
+                    h_deco_signal->SetLineColor(2);
+                    h_deco_backgr->SetLineColor(4);
+                    
+                    TLegend *leg_deco = new TLegend(0.55,0.7,0.89,0.85);
+                    leg_deco->SetFillColor(0);
+                    leg_deco->SetBorderSize(0);
+                    leg_deco->SetTextSize(0.05);
+                    leg_deco->SetFillColorAlpha(1,0); 
+                    leg_deco->AddEntry(h_deco_signal,"Signal","l");
+                    leg_deco->AddEntry(h_deco_backgr,"Background","l");
+        
+                    drawDecorrelatedInput(canv_deco, h_deco_signal, h_deco_backgr, leg_deco, "Adding"+file_names[current_file]+"var_"+variableName, seed_string);
+                    
+                }
+
+                
+                
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////   END  INPUT DECORRELATI   ////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
+                
+                
                 
                 
                 
@@ -921,7 +1004,12 @@ void efficiency_roc_Np1_giulio(){
                 hist_BDT_B_train_testBinning->Scale(8610./hist_BDT_B_train_testBinning->Integral());
                 
 
-                              
+//                 hist_BDT_S->Scale(1./hist_BDT_S->Integral());
+//                 hist_BDT_B->Scale(1./hist_BDT_B->Integral());
+//                 hist_BDT_S_train->Scale(1./hist_BDT_S_train->Integral());
+//                 hist_BDT_B_train->Scale(1./hist_BDT_B_train->Integral());
+//                 hist_BDT_S_train_testBinning->Scale(1./hist_BDT_S_train_testBinning->Integral());
+//                 hist_BDT_B_train_testBinning->Scale(1./hist_BDT_B_train_testBinning->Integral());             
 
 
         
