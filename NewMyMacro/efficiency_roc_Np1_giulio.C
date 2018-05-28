@@ -16,6 +16,9 @@
 #include <unistd.h>
 /////////////////////////////////////////
 
+#include "TMVA/Factory.h"
+#include "TMVA/Tools.h"
+#include "TMVA/Reader.h"
 
 
 
@@ -37,6 +40,13 @@ void setHistoStyle(TH1F *histo, std::string title_name, std::string Yaxis_name) 
     histo->GetYaxis()->SetTitleSize(0.05);
     histo->GetYaxis()->SetTitleOffset(0.8);
 }
+
+
+
+void addOverflow(TH1D * histo) {
+    histo->SetBinContent(histo->GetNbinsX(), histo->GetBinContent(histo->GetNbinsX()) + histo->GetBinContent(histo->GetNbinsX()+1));
+}
+
 
 
 
@@ -92,7 +102,7 @@ void  DrawCorrelationMatrix(TH2F * CorrelationMatrixS, TH2F * CorrelationMatrixB
 
 
 
-void DrawAndSave_bkg_and_signal(TH1D* hist_BDT_S, TH1D* hist_BDT_B, std::string Sample) {
+void DrawAndSave_bkg_and_signal(TH1D* hist_BDT_S, TH1D* hist_BDT_B, TLatex* texCMS1, TLatex* texCMS2, std::string Sample) {
     
     
         TCanvas * canv = new TCanvas("canvas", "", 800, 600);    
@@ -123,10 +133,14 @@ void DrawAndSave_bkg_and_signal(TH1D* hist_BDT_S, TH1D* hist_BDT_B, std::string 
                 
                 
         hist_BDT_S->Draw("hist");
+        texCMS1->Draw();
+        texCMS2->Draw();
         canv->Print((nameFig_S+".png").c_str());
         
         
         hist_BDT_B->Draw("hist");
+        texCMS1->Draw();
+        texCMS2->Draw();
         canv->Print((nameFig_B+".png").c_str());   
         
         
@@ -146,7 +160,8 @@ void DrawAndSave_bkg_and_signal(TH1D* hist_BDT_S, TH1D* hist_BDT_B, std::string 
         hist_BDT_S->Draw("hist");
         hist_BDT_B->Draw("hist same");
         leg->Draw("same");
-
+        texCMS1->Draw();
+        texCMS2->Draw();
         canv->Print((nameFig_Super+".png").c_str());        
     
 }
@@ -155,12 +170,12 @@ void DrawAndSave_bkg_and_signal(TH1D* hist_BDT_S, TH1D* hist_BDT_B, std::string 
    
    
    
-void DrawSensitivity(TH1D* hist_sensitivity, float sensitivityToPrint, std::string Sample) {
+void DrawSensitivity(TH1D* hist_sensitivity, float sensitivityToPrint, TLatex* texCMS1, TLatex* texCMS2, std::string Sample) {
    
     
         std::string nameFig     = hist_sensitivity->GetTitle();
         nameFig = "figure/efficiency_figure/BDToutput/sensitivity"+Sample+"/"+nameFig+"_Sensitivity";
-        
+        hist_sensitivity->SetTitle("");
         
 
 
@@ -175,11 +190,11 @@ void DrawSensitivity(TH1D* hist_sensitivity, float sensitivityToPrint, std::stri
         
         std::ostringstream sigmaString;
         sigmaString<<std::setprecision(3)<<sensitivityToPrint;
-        TLatex* tex = new TLatex(0.50,0.80,("Tot sigma = " + sigmaString.str() ).c_str());
+        TLatex* tex = new TLatex(0.5,0.80,("Total sensitivity = " + sigmaString.str() ).c_str());
         tex->SetNDC();
         tex->SetTextAlign(35);
         tex->SetTextFont(42);
-        tex->SetTextSize(0.06);
+        tex->SetTextSize(0.05);
         tex->SetLineWidth(2);
 
 
@@ -190,7 +205,7 @@ void DrawSensitivity(TH1D* hist_sensitivity, float sensitivityToPrint, std::stri
         gPad->SetGridy();
         
         hist_sensitivity->GetXaxis()->SetTitle("tanh^{-1}((BDT response + 1)/2)");
-        hist_sensitivity->GetYaxis()->SetTitle("bin per bin sensitivity");  
+        hist_sensitivity->GetYaxis()->SetTitle("bin by bin sensitivity");  
 
         
         hist_sensitivity->SetLineWidth(3);
@@ -213,6 +228,8 @@ void DrawSensitivity(TH1D* hist_sensitivity, float sensitivityToPrint, std::stri
         canv->cd();
         hist_sensitivity->Draw();
         tex->Draw();
+        texCMS1->Draw();
+        texCMS2->Draw();
         canv->Print((nameFig+".png").c_str());
         
         
@@ -318,7 +335,7 @@ void integrate_when_bkg_is_less_than_05(TH1D * hist_BDT_S, TH1D * hist_BDT_B) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////  DISEGNA IL TEST N+1 E LE PROBABILITA /////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void drawGraph(TCanvas * canv,  TLatex* texCMS1, TLatex* texCMS2, TLatex* texCMS3, TH1F *frame, TGraph *gr, std::string fig_name, bool isSensitivity, int n_variables, float significance_nomore) {
+void drawGraph(TCanvas * canv,  TLatex* texCMS1, TLatex* texCMS2, TLatex* texCMS3, TH1F *frame, TGraph *gr, std::string fig_name, bool isSensitivity, int n_variables, float significance_nomore, int primary_variables_number) {
 
         canv->cd();
         canv->SetBottomMargin(.3);
@@ -328,12 +345,22 @@ void drawGraph(TCanvas * canv,  TLatex* texCMS1, TLatex* texCMS2, TLatex* texCMS
         gPad->SetGridy();
         frame->Draw();
         texCMS1->Draw();   
-//         texCMS2->Draw();   
-        texCMS3->Draw();   
+        texCMS2->Draw();   
+//         texCMS3->Draw();   
         
         gr->SetMarkerStyle(21);
         gr->SetLineWidth(2);
         gr->Draw("PL");
+        
+        
+        std::string N_var = std::to_string(primary_variables_number);
+        std::string Np1_var = std::to_string(primary_variables_number+1);
+        TLatex* tex = new TLatex(0.2,0.82,("#bf{" + N_var + " #rightarrow " + Np1_var + "}").c_str() );
+        tex->SetNDC();
+        tex->SetTextAlign(35);
+        tex->SetTextFont(42);
+        tex->SetTextSize(0.06);
+        tex->SetLineWidth(2);
         
         
         
@@ -344,6 +371,7 @@ void drawGraph(TCanvas * canv,  TLatex* texCMS1, TLatex* texCMS2, TLatex* texCMS
         line2->SetLineColor(2);
         line2->SetLineWidth(2);
         line2->Draw("Lsame");
+        tex->Draw();
         }
         
         gr->SaveAs(("figure/efficiency_figure/"+fig_name+".root").c_str());
@@ -374,8 +402,9 @@ int  FindBinDown(TH1D *hist_BDT_binning_B, int binLimitUp, int minNumberOfEventP
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////  TROVA IL BINNING DEGLI ISTOGRAMMI ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void findBinning(float  binning_BDT[], int Nbins, int Nbins_binning, float max, int minNumberOfEventPerBin, int binMinNumber, TH1D * hist_BDT_binning_B) {
+void findBinning(float  binning_BDT[], int Nbins, int Nbins_binning, float max, float max_binning, int minNumberOfEventPerBin, int binMinNumber, TH1D * hist_BDT_binning_B) {
 
+    max = max_binning;
     
     for(int n = 0; n<Nbins; n++)  binning_BDT[n]=(n-Nbins)*0.000001;   
                 
@@ -409,9 +438,9 @@ void findBinning(float  binning_BDT[], int Nbins, int Nbins_binning, float max, 
 //     binning_BDT[0] = 0.;
     
     for(int n = 0; n<Nbins; n++)  if(binning_BDT[n]<(n-Nbins)*0.000001 + (1.*binMinNumber*max)/Nbins_binning) binning_BDT[n]=(n-Nbins)*0.000001;  
-    
-    
-    for(int n = 0; n < Nbins; n++) std::cout << binning_BDT[n] << ", \t";
+    binning_BDT[Nbins-1]=binning_BDT[Nbins-2]+0.15;
+
+     for(int n = 0; n < Nbins; n++) std::cout << binning_BDT[n] << ", \t";
     std::cout  << std::endl;
 }
 
@@ -600,9 +629,9 @@ void efficiency_roc_Np1_giulio(){
 //             const int primary_variables_number=9;
 //             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2","qgl_1qAtanh"};
             
-            const int primary_variables_number=8;
+//             const int primary_variables_number=8;
 //             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","ll_zstar","softActivityEWK_njets5", "ll_pt", "qgl_1qAtanh","W_mass_virtual1"};
-            std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2Log"};
+//             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2Log"};
             
             
 //             const int primary_variables_number=7;
@@ -632,8 +661,8 @@ void efficiency_roc_Np1_giulio(){
 
             
             
-            const int max_variables_number=8;
-            std::string all_variables_names[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2Log"};
+//             const int max_variables_number=8;
+//             std::string all_variables_names[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2Log"};
 //             const int max_variables_number=33;
 //             std::string all_variables_names[max_variables_number]={"ll_mass", "Invariant_MassLog","energytotLog","W_mass_virtual1","W_mass_virtual2","qgl_1qAtanh","qgl_2qAtanh" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","MqqLog", "Rpt", "ll_eta", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","impulsoZ"/*, "deltaMRel"*/, "cosThetaPlane","softActivityEWK_njets5", "W_eta_virtual1","W_eta_virtual2","X_parton1","X_parton2", "mumujj_pt", "absCosThetaStarJet"};
             
@@ -657,12 +686,74 @@ void efficiency_roc_Np1_giulio(){
             
             
             
+            float ll_mass = 0;
+            float MqqLog = 0;
+            float Rpt = 0;
+            float W_mass_virtual1Log = 0;
+            float ll_zstar = 0;
+            float temp_softActivityEWK_njets5 = 0;
+            float ll_pt = 0;
+            float output = 0;
+            int classID = 0;
+            float BDToutput = 0;
             
+            const int primary_variables_number=7;
+            std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt"};
+//             std::string variables_names_array_primary[primary_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt","W_mass_virtual2Log"};
+//             const int max_variables_number=7;
+//             std::string all_variables_names[max_variables_number]={"ll_mass","MqqLog", "Rpt","W_mass_virtual1Log","ll_zstar","softActivityEWK_njets5", "ll_pt"};
+            
+            
+            
+            const int max_variables_number=31;
+            std::string all_variables_names[max_variables_number]={"ll_mass", "ll_pt", "ll_eta", "Invariant_MassLog","energytotLog","W_mass_virtual1Log","W_mass_virtual2Log","qgl_1qAtanh","qgl_2qAtanh" ,/*"thetastarW2","thetastarW1",*/"theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","MqqLog", "Rpt", "DeltaEtaQQ" /*,"diffMassWWH"*/,"Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","impulsoZ", "deltaMRel", "cosThetaPlane","softActivityEWK_njets5", "W_eta_virtual1","W_eta_virtual2","X_parton1","X_parton2", "mumujj_pt", "absCosThetaStarJet"};
+            
+            
+            std::map <std::string, std::string> label;
+            
+            label["ll_mass"] = "m(ll)";
+            label["Invariant_MassLog"] = "M(jj#mu#mu)";
+            label["energytotLog"] = "E(jj#mu#mu)";
+            label["W_mass_virtual1"] = "M(W^{*}_{1})";
+            label["W_mass_virtual2"] = "M(W^{*}_{2})";
+            label["W_mass_virtual1Log"] = "M(W^{*}_{1})";
+            label["W_mass_virtual2Log"] = "M(W^{*}_{2})";
+            label["qgl_1qAtanh"] = "qgl(j_{1})";
+            label["qgl_2qAtanh"] = "qgl(j_{2})";
+            label["qgl_1q"] = "qgl(j_{1})";
+            label["qgl_2q"] = "qgl(j_{2})";
+            label["thetastarW2"] = "DA METTERE";
+            label["thetastarW1"] = "DA METTERE";
+            label["theta1"] = "cos(#theta(#mu#mu, j_{1}))";
+            label["theta2"] = "cos(#theta(#mu#mu, j_{2}))";
+            label["qq_pt"] = "p_{T}(jj)";
+            label["W_Pt_virtual1"] = "p_{T}(j_{1})";
+            label["W_Pt_virtual2"] = "p_{T}(j_{2})";
+            label["MqqLog"] = "M(jj)";
+            label["Mqq"] = "M(jj)";
+            label["Rpt"] = "Rpt";
+            label["ll_eta"] = "#eta(#mu#mu)";
+            label["DeltaEtaQQ"] = "|#Delta#eta_{jj}|";
+            label["ll_pt"] = "p_{T}{#mu#mu}";
+            label["Jet3_pt"] = "p_{T}(j_{3})";
+            label["ll_zstar"] = "z*";
+            label["softLeadingJet_pt"] = "p_{T}(soft Leading Jet)";
+            label["impulsoZ"] = "p_{Z}(jj#mu#mu)";
+            label["met_pt"] = "MET";
+            label["deltaMRel"] = "#Delta M(#mu#mu) / M(#mu#mu)";
+            label["cosThetaPlane"] = "cos(#theta_{(#mu#mu)(jj)})";
+            label["softActivityEWK_njets5"] = "# soft jets";
+            label["W_eta_virtual1"] = "#eta(W^{*}_{1})";
+            label["W_eta_virtual2"] = "#eta(W^{*}_{2})";
+            label["X_parton1"] = "X(p_{1})";
+            label["X_parton2"] = "X(p_{2})";
+            label["mumujj_pt"] = "p_{T}(jj#mu#mu)";
+            label["absCosThetaStarJet"] = "cos(#theta_{jj}*)";
+            label["nomore"] = "no more";
+
+            std::vector<std::string> all_variables_label;
             
 
-            std::string all_variables_label[max_variables_number]={"m(ll)", "M(jj#mu#mu)","E(jj#mu#mu)","M(W^{*}_1)","M(W^{*}_2)","atanh(qgl(j_1))","atanh(qgl(j_2))" ,"thetastarW2","thetastarW1","theta1", "qq_pt","theta2","W_Pt_virtual1","W_Pt_virtual2","MqqLog", "Rpt", "ll_eta", "DeltaEtaQQ" ,"diffMassWWH", "ll_pt","Jet3_pt","ll_zstar","met_pt","softLeadingJet_pt","impulsoZ"/*, "deltaMRel"*/, "cosThetaPlane","softActivityEWK_njets5", "W_eta_virtual1","W_eta_virtual2","X_parton1","X_parton2", "mumujj_pt", "absCosThetaStarJet"};
-            
-            
             
 //             const int primary_variables_number=2;
 //             std::string variables_names_array_primary[primary_variables_number]={"ll_mass", "BDTG_noMll"};
@@ -713,10 +804,11 @@ void efficiency_roc_Np1_giulio(){
                 }
                 if(damettere==true) {
                 variables_names[variable_idx] = all_variables_names[i];
+                all_variables_label.push_back(label[variables_names[variable_idx]]);
                 variable_idx++;
                 }
             }
-            
+           all_variables_label.push_back("no more");
 
         std::string variable_used_in_BDT = "";
         for(int i=0; i<primary_variables_number-1;i++)  
@@ -784,13 +876,15 @@ void efficiency_roc_Np1_giulio(){
 	
 	
 
-        const int Nbins = 20;          //Bins are Nbins -1
-        float max = 1.5;
+        const int Nbins = 12;          //Bins are Nbins -1
+        float max = 2.5;
+//         float max_binning=2.*max;
+        float max_binning=max;
         
         int Nbins_binning=10000;
         int minNumberOfEventPerBin = 5;
         float binWidth = 0.15;
-        int binMinNumber = (int) ( binWidth*((1.*Nbins_binning)/(1.*max)));
+        int binMinNumber = (int) ( binWidth*((1.*Nbins_binning)/(1.*max_binning)));
         
 
 
@@ -801,7 +895,7 @@ void efficiency_roc_Np1_giulio(){
 	for (int current_file=0;current_file<n_variables;current_file++){
             
             
-                const int numberOfSeedToRead = 20;
+                const int numberOfSeedToRead = 19;
             
                 std::vector<Double_t> totalSensitivity_thisVariable;
                 std::vector<Double_t> totalSensitivity_thisVariable_train;
@@ -846,14 +940,22 @@ void efficiency_roc_Np1_giulio(){
 //                 totalKS_B_thisVariable.push_back(0.);
                 
                 
-                int seed = 1201 + seed_idx;
-
-//                 if (seed>= 1104 ) seed = seed + 1;
-//                 if (seed>= 1107 ) seed = seed + 1;
-//                 if (seed>= 1117 ) seed = seed + 1;
+                int seed = 1401 + seed_idx;  //TEST DELLA TESI
+//                 int seed = 1342 + seed_idx;
                 
-//                 if (seed>= 1142 ) seed = seed + 1;
-//                 if (seed>= 1147 ) seed = seed + 1;
+                
+//                 if (seed>= 1343 ) seed = seed + 3;
+//                 if (seed>= 1351 ) seed = seed + 1;
+//                 if (seed>= 1354 ) seed = seed + 1;
+                
+//                 if (seed>= 1376 ) seed = seed + 1;
+//                 if (seed>= 1388 ) seed = seed + 1;
+//                 if (seed>= 1391 ) seed = seed + 3;
+                
+                
+//                 if (seed>= 1410 ) seed = seed + 1;
+
+//                 if (seed>= 1286 ) seed = seed + 1;
 //                 if (seed>= 1150 ) seed = seed + 1;
 //                 if (seed>= 1154 ) seed = seed + 1;
 //                 if (seed>= 1158 ) seed = seed + 1;
@@ -964,6 +1066,7 @@ void efficiency_roc_Np1_giulio(){
                 
                 
                 std::string classificator = "BDTG";
+//                 classificator = "BDToutput";
 //                 classificator = "MLP";
 //                 classificator = "PDEFoam";
 //                 classificator = "TMlpANN";
@@ -975,15 +1078,22 @@ void efficiency_roc_Np1_giulio(){
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////    TROVO IL BINNING   ///////////////////////////////////////////////
                 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                TH1D *hist_BDT_binning_B        = new TH1D ("hist_BDT_binning_B", variables_names[current_file].c_str(), Nbins_binning, 0., max);
-                TH1D *hist_BDT_binning_B_train  = new TH1D ("hist_BDT_binning_B_train", variables_names[current_file].c_str(), Nbins_binning, 0., max);
-                
+                TH1D *hist_BDT_binning_B        = new TH1D ("hist_BDT_binning_B", variables_names[current_file].c_str(), Nbins_binning, 0., max_binning);
+                TH1D *hist_BDT_binning_B_train  = new TH1D ("hist_BDT_binning_B_train", variables_names[current_file].c_str(), Nbins_binning, 0., max_binning);
+
 //                 tree->Draw("atanh((BDTG+1.)/2.)>>hist_BDT_binning_B", "(classID ==1 )");
 //                 train_tree->Draw("atanh((BDTG+1.)/2.)>>hist_BDT_binning_B_train", "(classID ==1 )");
 
                 tree->Draw(("atanh(("+classificator+"+1.)/2.)>>hist_BDT_binning_B").c_str(), "(classID ==1 )");
                 train_tree->Draw(("atanh(("+classificator+"+1.)/2.)>>hist_BDT_binning_B_train").c_str(), "(classID ==1 )");
 
+                
+                
+                
+
+    
+
+                
                 float binning_BDT[Nbins];
                 float binning_BDT_train[Nbins];
 
@@ -1006,8 +1116,9 @@ void efficiency_roc_Np1_giulio(){
                 
                 
                 
-                findBinning(binning_BDT,        Nbins, Nbins_binning, max, minNumberOfEventPerBin, binMinNumber, hist_BDT_binning_B);
-                findBinning(binning_BDT_train,  Nbins, Nbins_binning, max, minNumberOfEventPerBin, binMinNumber, hist_BDT_binning_B_train);
+                findBinning(binning_BDT,        Nbins, Nbins_binning, max, max_binning, minNumberOfEventPerBin, binMinNumber, hist_BDT_binning_B);
+//                 findBinning(binning_BDT_train,        Nbins, Nbins_binning, max, max_binning, minNumberOfEventPerBin, binMinNumber, hist_BDT_binning_B);
+                findBinning(binning_BDT_train,  Nbins, Nbins_binning, max, max_binning, minNumberOfEventPerBin, binMinNumber, hist_BDT_binning_B_train);
                 
                 
                 
@@ -1080,12 +1191,16 @@ void efficiency_roc_Np1_giulio(){
                 TH1D *hist_sensitivity = new TH1D ("hist_sensitivity",(variables_names[current_file]+"_"+seed_string+"Seed").c_str(), Nbins-1, binning_BDT);
                 TH1D *hist_sensitivity_train = new TH1D ("hist_sensitivity_train",(variables_names[current_file]+"_"+seed_string+"Seed").c_str(), Nbins-1, binning_BDT_train);
                 
+
+                
+                
+                
                 hist_BDT_S->Sumw2();
                 hist_BDT_B->Sumw2();
                 hist_BDT_S_train->Sumw2();
                 hist_BDT_B_train->Sumw2();
                 
-
+                
 
             
 
@@ -1105,6 +1220,22 @@ void efficiency_roc_Np1_giulio(){
                 train_tree->Draw(("atanh(("+classificator+"+1.)/2.)>>hist_BDT_S_train_testBinning").c_str(), "(classID ==0 )");
                 train_tree->Draw(("atanh(("+classificator+"+1.)/2.)>>hist_BDT_B_train_testBinning").c_str(), "(classID ==1 )");
       
+                      
+//                 hist_BDT_S->SetTitle("");
+//                 hist_BDT_B->SetTitle("");
+//                 hist_sensitivity->SetTitle("");
+                
+/////////////////////////////// ADDING OVERFLOW /////////////////////////////////////////////////////////////////////       
+//                 addOverflow(hist_BDT_S);
+//                 addOverflow(hist_BDT_B);
+//                 addOverflow(hist_BDT_S_train);
+//                 addOverflow(hist_BDT_B_train);
+//                 addOverflow(hist_BDT_S_train_testBinning);
+//                 addOverflow(hist_BDT_B_train_testBinning);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+                
+                
+                
 //////////////////////////////////0.5 non significa niente perche sta prima di Scale(). nel codice vecchio stava qui (per errore)////////////////////////////////////////////////////////////////////
 /*                bool oltreBKG = false;
                 int lastGood=0;
@@ -1141,8 +1272,52 @@ void efficiency_roc_Np1_giulio(){
                 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
                 
-                
-                
+         
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+//////////////////////////////////////////////////////////////////// CHECK: READING XML //////////////////////////////////////////////////////////////////////////////////////  
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+//         if (0) {
+//             TMVA::Reader *reader = new TMVA::Reader("Silent");
+//         
+//             reader->AddVariable("ll_mass",&ll_mass);   
+//             reader->AddVariable("MqqLog",&MqqLog);
+//             reader->AddVariable("Rpt",&Rpt);
+//             reader->AddVariable("W_mass_virtual1Log",&W_mass_virtual1Log); 
+//             reader->AddVariable("ll_zstar",&ll_zstar);
+//             reader->AddVariable("softActivityEWK_njets5",&temp_softActivityEWK_njets5);   // this is float
+//             reader->AddVariable("ll_pt",&ll_pt);
+//             reader->AddSpectator("BDToutput",&BDToutput);
+//             
+//             tree->SetBranchAddress("ll_mass",&ll_mass);
+//             tree->SetBranchAddress("MqqLog",&MqqLog);
+//             tree->SetBranchAddress("Rpt",&Rpt);
+//             tree->SetBranchAddress("W_mass_virtual1Log",&W_mass_virtual1Log);
+//             tree->SetBranchAddress("ll_zstar",&ll_zstar);
+//             tree->SetBranchAddress("softActivityEWK_njets5",&temp_softActivityEWK_njets5);
+//             tree->SetBranchAddress("ll_pt",&ll_pt);
+//             tree->SetBranchAddress("classID",&classID);
+//             
+//     //         reader->BookMVA("BDTG", "/scratch/mandorli/Hmumu/restartFromFilippo/CMSSW_8_0_28/src/code/BDTxml/mayTraining/Classification_BDTG_1477SeedGen.weights_30000Event_100Tree_2Deep_SigCirca1_mll_MqqLog_Rpt_Wmass1_llZstar_softN5_llPt.xml");
+//             reader->BookMVA("BDTG", "/scratch/mandorli/Hmumu/training/CMSSW_8_0_28/src/training/weights/TMVAClassification_BDTG_nomore_1477SeedGen_muaxis2jet2q_v25/Classification_BDTG.weights.xml");
+//         
+//             TH1D *hist_BDT_recomputed_S = new TH1D (("hist_BDT_recomputed_"+variables_names[current_file]+"_S").c_str(), (variables_names[current_file]+"_"+seed_string+"Seed").c_str(), Nbins-1, binning_BDT);
+//             TH1D *hist_BDT_recomputed_B = new TH1D (("hist_BDT_recomputed_"+variables_names[current_file]+"_B").c_str(), (variables_names[current_file]+"_"+seed_string+"Seed").c_str(), Nbins-1, binning_BDT);
+//                     
+//             for (int n = 0; n < tree->GetEntries();n++) {
+//                 tree->GetEntry(n);
+//                 output = atanh((reader->EvaluateMVA("BDTG")+1.)/2.);
+//     //             std::cout << n << "  " << output << std::endl;
+//                 if (classID ==0) hist_BDT_recomputed_S->Fill(output);
+//                 if (classID ==1) hist_BDT_recomputed_B->Fill(output);
+//             }
+//             
+//             hist_BDT_recomputed_S->Scale(8.4/hist_BDT_recomputed_S->Integral(0, Nbins));
+//             hist_BDT_recomputed_B->Scale(3426./hist_BDT_recomputed_B->Integral(0, Nbins));
+//         }
+        
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
                 
                     
 //                 hist_BDT_S->Scale(9.2/hist_BDT_S->Integral());
@@ -1187,9 +1362,9 @@ void efficiency_roc_Np1_giulio(){
         
         
                 
-                DrawAndSave_bkg_and_signal(hist_BDT_S,       hist_BDT_B,        "Test");
-                DrawAndSave_bkg_and_signal(hist_BDT_S_train, hist_BDT_B_train,  "Train");
-                
+                DrawAndSave_bkg_and_signal(hist_BDT_S,       hist_BDT_B,                 texCMS1, texCMS2, "Test");
+                DrawAndSave_bkg_and_signal(hist_BDT_S_train, hist_BDT_B_train,           texCMS1, texCMS2, "Train");
+//                 DrawAndSave_bkg_and_signal(hist_BDT_recomputed_S, hist_BDT_recomputed_B, texCMS1, texCMS2,  "Recomputed");
             
 
                 
@@ -1235,8 +1410,8 @@ void efficiency_roc_Np1_giulio(){
                 std::cout << "totalSensitivityError_thisVariable  prima:    " << totalSensitivityError_thisVariable[totalSensitivityErrorSquared_thisVariable.size()-1] << std::endl;
 
 
-                DrawSensitivity(hist_sensitivity, totalSensitivity_thisVariable[totalSensitivityErrorSquared_thisVariable.size()-1], "Test");
-                DrawSensitivity(hist_sensitivity_train, totalSensitivity_thisVariable_train[totalSensitivityErrorSquared_thisVariable.size()-1], "Train");
+                DrawSensitivity(hist_sensitivity, totalSensitivity_thisVariable[totalSensitivityErrorSquared_thisVariable.size()-1], texCMS1, texCMS2, "Test");
+                DrawSensitivity(hist_sensitivity_train, totalSensitivity_thisVariable_train[totalSensitivityErrorSquared_thisVariable.size()-1], texCMS1, texCMS2, "Train");
 
                 
                 
@@ -1353,7 +1528,7 @@ void efficiency_roc_Np1_giulio(){
         
         
         for (int i=0;i<n_variables;i++){
-            frame2->GetXaxis()->SetBinLabel(i+1,variables_names[i].c_str());
+            frame2->GetXaxis()->SetBinLabel(i+1,all_variables_label[i].c_str());
             hChi_S->GetXaxis()->SetBinLabel(i+1,variables_names[i].c_str());
             hChi_B->GetXaxis()->SetBinLabel(i+1,variables_names[i].c_str());
             hProb_S->GetXaxis()->SetBinLabel(i+1,variables_names[i].c_str());
@@ -1375,7 +1550,8 @@ void efficiency_roc_Np1_giulio(){
         
         frame2->GetXaxis()->LabelsOption("v");
         
-        setHistoStyle(frame2,    variable_used_in_BDT.c_str(),                    "Sensitivity");
+//         setHistoStyle(frame2,    variable_used_in_BDT.c_str(),                    "Sensitivity");
+        setHistoStyle(frame2,    "",                    "Sensitivity");
         setHistoStyle(hChi_S,    "Signal Chi^2",        "Chi2");
         setHistoStyle(hChi_B,    "Background Chi^2",    "Chi2");
         setHistoStyle(hProb_S,   "Signal Prob",         "Probability (Chi2)");
@@ -1402,14 +1578,14 @@ void efficiency_roc_Np1_giulio(){
         gr->SetMarkerColor(4);
         gr->SetMarkerStyle(21);
         
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, frame2, gr, "totalSensitivity"+trainingOption,             true, n_variables, totalSensitivity[n_variables-1]);        
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, frame2, gr_train, "totalSensitivity_train"+trainingOption, true, n_variables, totalSensitivity_train[n_variables-1]);        
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hProb_S, gr_ProbS, "Chi2_and_KS_prob/probability_signal",            false, 0, 0);
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hProb_B, gr_ProbB, "Chi2_and_KS_prob/probability_background",        false, 0, 0);
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hChi_S,  gr_ChiS, "Chi2_and_KS_prob/chi2_signal",                    false, 0, 0);
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hChi_B,  gr_ChiB, "Chi2_and_KS_prob/chi2_background",                false, 0, 0);
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hKS_S,   gr_KS_S, "Chi2_and_KS_prob/KS_signal",                      false, 0, 0);
-        drawGraph(canv, texCMS1, texCMS2, texCMS3, hKS_B,   gr_KS_B, "Chi2_and_KS_prob/KS_background",                  false, 0, 0);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, frame2, gr, "totalSensitivity"+trainingOption,             true, n_variables, totalSensitivity[n_variables-1], primary_variables_number);        
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, frame2, gr_train, "totalSensitivity_train"+trainingOption, true, n_variables, totalSensitivity_train[n_variables-1], primary_variables_number);        
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hProb_S, gr_ProbS, "Chi2_and_KS_prob/probability_signal",            false, 0, 0, primary_variables_number);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hProb_B, gr_ProbB, "Chi2_and_KS_prob/probability_background",        false, 0, 0, primary_variables_number);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hChi_S,  gr_ChiS, "Chi2_and_KS_prob/chi2_signal",                    false, 0, 0, primary_variables_number);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hChi_B,  gr_ChiB, "Chi2_and_KS_prob/chi2_background",                false, 0, 0, primary_variables_number);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hKS_S,   gr_KS_S, "Chi2_and_KS_prob/KS_signal",                      false, 0, 0, primary_variables_number);
+        drawGraph(canv, texCMS1, texCMS2, texCMS3, hKS_B,   gr_KS_B, "Chi2_and_KS_prob/KS_background",                  false, 0, 0, primary_variables_number);
 
         frame2->SaveAs(("figure/efficiency_figure/totSensDir/frame_"+std::to_string(primary_variables_number)+"To"+std::to_string(primary_variables_number+1)+".root").c_str());
 
